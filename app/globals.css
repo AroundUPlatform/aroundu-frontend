@@ -2,13 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* ── Dark Theme (default) ── */
+:root,
+.dark {
     color-scheme: dark;
+    --color-background: 10 12 18;
+    --color-surface: 16 20 30;
+    --color-surface-strong: 24 28 42;
+    --color-text: 235 238 250;
+    --color-muted: 140 152 180;
+    --color-brand: 99 179 237;
+    --color-brand-strong: 66 153 225;
+    --color-danger: 252 129 129;
+    --color-success: 72 210 143;
+    --color-warning: 246 186 73;
+    --color-border: 255 255 255;
+    --border-alpha: 0.08;
+}
+
+/* ── Light Theme ── */
+.light {
+    color-scheme: light;
+    --color-background: 248 250 252;
+    --color-surface: 255 255 255;
+    --color-surface-strong: 241 245 249;
+    --color-text: 15 23 42;
+    --color-muted: 100 116 139;
+    --color-brand: 59 130 246;
+    --color-brand-strong: 37 99 235;
+    --color-danger: 239 68 68;
+    --color-success: 22 163 74;
+    --color-warning: 234 155 20;
+    --color-border: 0 0 0;
+    --border-alpha: 0.08;
 }
 
 @layer base {
     * {
         @apply box-border;
+    }
+
+    /* Smooth theme transitions on ALL color/bg/border/shadow properties */
+    *,
+    *::before,
+    *::after {
+        transition-property: color, background-color, border-color, box-shadow, opacity, fill, stroke;
+        transition-duration: 300ms;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Opt out of theme transition for animations & transforms (prevents jank) */
+    [class*="animate-"],
+    [class*="transition-transform"] {
+        transition-property: none;
     }
 
     body {
@@ -19,7 +65,8 @@
     }
 
     a {
-        @apply text-inherit no-underline transition-colors duration-150;
+        @apply text-inherit no-underline;
+        transition: color 200ms ease, background-color 200ms ease, border-color 200ms ease, transform 150ms ease;
     }
 
     a:hover {
@@ -37,37 +84,88 @@
     }
 
     .card {
-        @apply rounded-2xl border border-border/70 bg-surface shadow-card;
+        @apply rounded-2xl border border-border bg-surface shadow-card;
+        transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+                    box-shadow 300ms ease,
+                    border-color 300ms ease,
+                    background-color 300ms ease;
     }
 
     .badge {
-        @apply inline-flex items-center gap-2 rounded-xl border border-border/70 bg-white/5 px-3 py-2 text-sm text-muted;
+        @apply inline-flex items-center gap-2 rounded-xl border border-border bg-white/5 px-3 py-2 text-sm text-muted;
+        transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .badge:hover {
+        @apply border-brand/40 bg-brand/5;
+        transform: translateY(-1px);
     }
 
     .btn {
-        @apply inline-flex items-center justify-center gap-2 rounded-xl border border-transparent px-4 py-2.5 font-semibold text-text transition duration-150 ease-in-out;
+        @apply inline-flex items-center justify-center gap-2 rounded-xl border border-transparent px-4 py-2.5 font-semibold text-text;
+        transition: all 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .btn:active {
+        transform: translateY(0) scale(0.97);
+        transition-duration: 100ms;
     }
 
     .btn:disabled {
         @apply cursor-not-allowed opacity-60;
+        transform: none;
     }
 
     .btn.primary {
-        @apply bg-gradient-to-r from-brand to-brand-strong text-slate-950 shadow-brand;
+        @apply bg-gradient-to-r from-brand to-brand-strong text-white shadow-brand;
+    }
+
+    .btn.primary:hover {
+        box-shadow: 0 12px 32px rgba(99, 179, 237, 0.35),
+                    0 4px 8px rgba(99, 179, 237, 0.15);
+    }
+
+    .light .btn.primary {
+        @apply text-white;
     }
 
     .btn.ghost {
-        @apply border border-border/70 bg-white/5 hover:border-brand/60;
+        @apply border border-border bg-white/5;
+    }
+
+    .btn.ghost:hover {
+        @apply border-brand bg-brand/5;
     }
 
     .btn.danger {
-        @apply border border-danger/60 bg-danger/10 text-red-100;
+        @apply border border-danger bg-red-500/10 text-red-200;
+    }
+
+    .light .btn.danger {
+        @apply text-red-700;
     }
 
     .input,
     .select,
     .textarea {
-        @apply w-full rounded-xl border border-border/70 bg-white/5 px-3 py-2.5 text-sm text-text placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/40;
+        @apply w-full rounded-xl border border-border bg-white/5 px-3 py-2.5 text-sm text-text placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-blue-400/30;
+        transition: border-color 200ms ease, box-shadow 200ms ease, background-color 300ms ease;
+    }
+
+    .input:hover,
+    .select:hover,
+    .textarea:hover {
+        @apply border-brand/40;
+    }
+
+    .light .input,
+    .light .select,
+    .light .textarea {
+        @apply bg-white;
     }
 
     .label {
@@ -79,7 +177,13 @@
     }
 
     .chip {
-        @apply inline-flex items-center gap-2 rounded-full border border-border/70 bg-white/5 px-3 py-1.5 text-xs font-medium text-text;
+        @apply inline-flex items-center gap-2 rounded-full border border-border bg-white/5 px-3 py-1.5 text-xs font-medium text-text;
+        transition: all 200ms ease;
+    }
+
+    .chip:hover {
+        @apply border-brand/30 bg-brand/5;
+        transform: scale(1.03);
     }
 
     .table {
@@ -88,7 +192,7 @@
 
     .table th,
     .table td {
-        @apply border-b border-border/70 px-2.5 py-2 text-left;
+        @apply border-b border-border px-2.5 py-2 text-left;
     }
 
     .table th {
@@ -96,18 +200,104 @@
     }
 
     .kicker {
-        @apply text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-muted;
+        @apply text-xs font-semibold uppercase tracking-[0.3em] text-brand;
     }
 
     .hero-title {
-        @apply text-4xl font-semibold leading-tight md:text-5xl;
+        @apply font-display text-5xl font-extrabold leading-[1.05] tracking-tight md:text-7xl lg:text-8xl;
+    }
+
+    .section-title {
+        @apply font-display text-3xl font-bold tracking-tight md:text-4xl;
     }
 
     .nav-link {
-        @apply block rounded-lg border border-transparent px-3 py-2 text-sm font-semibold text-text/80 transition hover:border-brand/60 hover:text-text;
+        @apply block rounded-lg border border-transparent px-3 py-2 text-sm font-semibold text-muted;
+        transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .nav-link:hover {
+        @apply border-brand/50 bg-brand/5 text-text;
+        transform: translateX(2px);
     }
 
     .nav-link.active {
-        @apply border-brand text-text;
+        @apply border-brand bg-brand/10 text-text;
     }
+}
+
+/* ── Smooth scroll & GPU hints ── */
+html {
+    scroll-behavior: smooth;
+}
+
+/* ── Animated gradient text helper ── */
+.gradient-text-animated {
+    background-size: 200% 200%;
+    animation: text-gradient 4s ease infinite;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* ── Orb background blobs ── */
+.orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.15;
+    will-change: transform;
+    pointer-events: none;
+}
+
+.dark .orb { opacity: 0.12; }
+.light .orb { opacity: 0.08; }
+
+/* ── Ripple ring effect ── */
+.ripple-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    animation: ripple 2s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+    pointer-events: none;
+}
+
+@keyframes text-gradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+@keyframes ripple {
+    0% { transform: scale(0.8); opacity: 0.6; }
+    100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* ── Glass card effect ── */
+.glass {
+    backdrop-filter: blur(16px) saturate(1.8);
+    -webkit-backdrop-filter: blur(16px) saturate(1.8);
+}
+
+/* ── Section gradient dividers ── */
+.section-gradient-dark {
+    background: linear-gradient(
+        180deg,
+        rgb(var(--color-background)) 0%,
+        rgb(var(--color-surface)) 50%,
+        rgb(var(--color-background)) 100%
+    );
+}
+
+/* ── Hover lift for cards ── */
+.hover-lift {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.light .hover-lift:hover {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
 }

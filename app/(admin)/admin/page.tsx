@@ -1,154 +1,67 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "../../../components/layout/AuthProvider";
-import { fetchClients, fetchWorkers, deleteClient, deleteWorker } from "../../../services/admin";
-import type { Client, Worker } from "../../../types/user";
+import { motion } from "framer-motion";
+import { fetchOverview } from "../../../services/admin";
+import { Spinner } from "../../../components/ui/Spinner";
+import type { AdminOverview } from "../../../types/admin";
+import { cn } from "../../../lib/cn";
 
-export default function AdminPage() {
-    const { session } = useAuth();
-    const router = useRouter();
-    const [clients, setClients] = useState<Client[]>([]);
-    const [workers, setWorkers] = useState<Worker[]>([]);
-    const [status, setStatus] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-
-    const isAdmin = session?.role === "ADMIN";
+export default function AdminOverviewPage() {
+    const [overview, setOverview] = useState<AdminOverview | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (session && !isAdmin) router.replace("/login");
-    }, [session, isAdmin, router]);
+        fetchOverview()
+            .then((res) => setOverview(res.data ?? null))
+            .finally(() => setLoading(false));
+    }, []);
 
-    useEffect(() => {
-        if (!session || !isAdmin) return;
-        loadData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [session?.userId]);
-
-    const loadData = async () => {
-        if (!session) return;
-        setLoading(true);
-        setStatus("Loading admin data...");
-        try {
-            const [c, w] = await Promise.all([fetchClients(0, 50), fetchWorkers(0, 50)]);
-            setClients(c.data?.content ?? []);
-            setWorkers(w.data?.content ?? []);
-            setStatus("Admin data ready");
-        } catch (err: any) {
-            setStatus(err?.message ?? "Failed to load admin data");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const removeClient = async (id: number) => {
-        setLoading(true);
-        setStatus("Deleting client...");
-        try {
-            await deleteClient(id);
-            loadData();
-        } catch (err: any) {
-            setStatus(err?.message ?? "Delete failed");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const removeWorker = async (id: number) => {
-        setLoading(true);
-        setStatus("Deleting worker...");
-        try {
-            await deleteWorker(id);
-            loadData();
-        } catch (err: any) {
-            setStatus(err?.message ?? "Delete failed");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    if (!session) {
-        return (
-            <div className="card space-y-2 p-6">
-                <h2 className="text-xl font-semibold">Login required</h2>
-                <p className="muted">Please login as admin to continue.</p>
-            </div>
-        );
+    if (loading) {
+        return <div className="flex items-center justify-center py-16"><Spinner size="lg" /></div>;
     }
 
+    const stats = overview
+        ? [
+              { label: "Total Clients", value: overview.totalClients, icon: "👤", accent: "text-brand" },
+              { label: "Total Workers", value: overview.totalWorkers, icon: "🔧", accent: "text-brand" },
+              { label: "Active Jobs", value: overview.activeJobs, icon: "⚡", accent: "text-warning" },
+              { label: "Open Jobs", value: overview.openJobs, icon: "📋", accent: "text-brand" },
+              { label: "Created Today", value: overview.jobsCreatedToday, icon: "🆕", accent: "text-success" },
+              { label: "Completed Today", value: overview.jobsCompletedToday, icon: "✅", accent: "text-success" },
+          ]
+        : [];
+
     return (
-        <div className="grid gap-4">
-            <p className="muted text-sm">{status ?? "Review clients and workers"}</p>
-            <div className="card p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <div className="kicker">Admin portal</div>
-                        <h2 className="text-xl font-semibold">Users</h2>
-                        <p className="muted text-sm">Delete operations call backend admin-protected endpoints. Search/sort/bulk delete are not implemented by backend yet.</p>
-                    </div>
-                    <button className="btn primary" onClick={loadData} disabled={loading}>
-                        Refresh
-                    </button>
-                </div>
+        <div className="space-y-6">
+            <div>
+                <h1 className="text-2xl font-bold text-text">Platform Overview</h1>
+                <p className="text-sm text-muted">Real-time platform statistics.</p>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="card space-y-4 p-5">
-                    <h3 className="text-lg font-semibold">Clients</h3>
-                    {clients.length === 0 && <p className="muted">No clients loaded.</p>}
-                    <div className="grid gap-3">
-                        {clients.map((c) => (
-                            <div key={c.id} className="badge flex w-full items-center justify-between">
-                                <div>
-                                    <div className="font-semibold">{c.name ?? "Client"}</div>
-                                    <div className="muted text-sm">{c.email}</div>
-                                </div>
-                                <button className="btn danger" onClick={() => removeClient(c.id)} disabled={loading}>
-                                    Delete
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                    <button className="btn ghost" disabled title="Not implemented in backend">
-                        Delete all clients (Coming soon)
-                    </button>
-                </div>
-                <div className="card space-y-4 p-5">
-                    <h3 className="text-lg font-semibold">Workers</h3>
-                    {workers.length === 0 && <p className="muted">No workers loaded.</p>}
-                    <div className="grid gap-3">
-                        {workers.map((w) => (
-                            <div key={w.id} className="badge flex w-full items-center justify-between">
-                                <div>
-                                    <div className="font-semibold">{w.name ?? "Worker"}</div>
-                                    <div className="muted text-sm">{w.email}</div>
-                                </div>
-                                <button className="btn danger" onClick={() => removeWorker(w.id)} disabled={loading}>
-                                    Delete
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                    <button className="btn ghost" disabled title="Not implemented in backend">
-                        Delete all workers (Coming soon)
-                    </button>
-                </div>
+
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+                {stats.map((s, i) => (
+                    <motion.div
+                        key={s.label}
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        className="rounded-2xl border border-border/60 bg-surface p-5"
+                    >
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">{s.icon}</span>
+                            <span className="text-xs text-muted">{s.label}</span>
+                        </div>
+                        <div className={cn("mt-2 text-3xl font-bold", s.accent)}>{s.value}</div>
+                    </motion.div>
+                ))}
             </div>
-            <div className="card space-y-3 p-5">
-                <h3 className="text-lg font-semibold">Jobs overview</h3>
-                <p className="muted text-sm">Backend does not expose an admin job listing yet. Controls below are disabled until available.</p>
-                <div className="flex flex-wrap gap-3">
-                    <button className="btn ghost" disabled title="Backend endpoint missing">
-                        View all jobs (Coming soon)
-                    </button>
-                    <button className="btn ghost" disabled title="Backend endpoint missing">
-                        Delete job (Coming soon)
-                    </button>
-                    <button className="btn ghost" disabled title="Backend endpoint missing">
-                        Delete all jobs (Coming soon)
-                    </button>
+
+            {!overview && (
+                <div className="rounded-2xl border border-dashed border-border/60 py-12 text-center">
+                    <p className="text-muted">Could not load overview data. Make sure the backend is running.</p>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

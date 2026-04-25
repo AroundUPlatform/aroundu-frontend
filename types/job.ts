@@ -10,6 +10,9 @@ export type JobStatus =
     | "READY_TO_START"
     | "IN_PROGRESS"
     | "COMPLETED"
+    | "COMPLETED_PENDING_PAYMENT"
+    | "PAYMENT_RELEASED"
+    | "JOB_CLOSED_DUE_TO_EXPIRATION"
     | "CANCELLED";
 
 export type Skill = {

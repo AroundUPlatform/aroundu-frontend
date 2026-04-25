@@ -1,20 +1,28 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../../components/layout/AuthProvider";
+import { useTheme } from "../../../components/layout/ThemeProvider";
+import { cn } from "../../../lib/cn";
+import { logoForTheme } from "../../../utils/assets";
 
 const nav = [
-    { href: "/worker/dashboard", label: "Dashboard" },
-    { href: "/worker/dashboard?tab=feed", label: "Job feed" },
-    { href: "/worker/dashboard?tab=verification", label: "Verification" },
+    { href: "/worker/dashboard", label: "Job Feed", icon: "📡" },
+    { href: "/worker/my-jobs", label: "My Jobs", icon: "🔧" },
+    { href: "/worker/conversations", label: "Conversations", icon: "💬" },
+    { href: "/worker/profile", label: "Profile", icon: "👤" },
 ];
 
 export default function WorkerLayout({ children }: { children: React.ReactNode }) {
     const { session, logout, loading } = useAuth();
+    const { resolved, setTheme } = useTheme();
     const router = useRouter();
     const pathname = usePathname();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
         if (loading) return;
@@ -28,38 +36,130 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
         }
     }, [session, router, loading]);
 
-    if (!session) return <div className="card p-6">Checking session...</div>;
+    if (!session) {
+        return (
+            <div className="flex min-h-screen items-center justify-center">
+                <div className="animate-pulse text-muted">Checking session…</div>
+            </div>
+        );
+    }
 
     return (
-        <div className="layout-shell">
-            <div className="grid items-start gap-4 lg:grid-cols-[240px,1fr]">
-                <aside className="card sticky top-12 space-y-3 p-5">
-                    <div className="text-lg font-semibold">Worker workspace</div>
-                    <div className="muted text-xs">Signed in as {session.email}</div>
-                    <div className="grid gap-2 pt-1">
-                        {nav.map((item) => {
-                            const active = pathname === item.href;
-                            return (
-                                <Link key={item.href} href={item.href} className={`nav-link ${active ? "active" : ""}`}>
-                                    {item.label}
-                                </Link>
-                            );
-                        })}
-                    </div>
-                    <button className="btn ghost mt-3 w-full" onClick={logout}>
-                        Logout
-                    </button>
-                </aside>
-                <section className="card space-y-4 p-5">
-                    <header className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <div className="kicker">Worker dashboard</div>
-                            <h2 className="text-xl font-semibold">Job feed & verification</h2>
+        <div className="min-h-screen bg-background">
+            {/* Mobile top bar */}
+            <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border/60 bg-surface/90 backdrop-blur-xl px-4 py-3 lg:hidden">
+                <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="text-xl"
+                >
+                    ☰
+                </motion.button>
+                <Image
+                    src={logoForTheme(resolved)}
+                    alt="AroundU"
+                    width={100}
+                    height={28}
+                    className="h-7 w-auto"
+                />
+                <motion.button
+                    whileTap={{ scale: 0.85, rotate: 180 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                    onClick={() => setTheme(resolved === "dark" ? "light" : "dark")}
+                    className="text-lg"
+                >
+                    {resolved === "dark" ? "☀️" : "🌙"}
+                </motion.button>
+            </header>
+
+            <div className="mx-auto flex max-w-7xl gap-0 lg:gap-6 lg:px-6 lg:py-6">
+                {/* Sidebar */}
+                <aside
+                    className={cn(
+                        "fixed inset-y-0 left-0 z-40 w-64 transform border-r border-border/60 bg-surface transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] lg:sticky lg:top-6 lg:z-auto lg:h-[calc(100vh-3rem)] lg:translate-x-0 lg:rounded-2xl lg:border",
+                        sidebarOpen ? "translate-x-0" : "-translate-x-full",
+                    )}
+                >
+                    <div className="flex h-full flex-col p-5">
+                        <div className="mb-6 hidden lg:block">
+                            <Image
+                                src={logoForTheme(resolved)}
+                                alt="AroundU"
+                                width={120}
+                                height={32}
+                                className="h-8 w-auto"
+                            />
                         </div>
-                        <div className="chip">Role: Worker</div>
-                    </header>
-                    <div>{children}</div>
-                </section>
+
+                        <div className="mb-5 rounded-xl bg-brand/5 p-3">
+                            <div className="text-sm font-semibold text-text">{session.email?.split("@")[0]}</div>
+                            <div className="text-xs text-muted">{session.email}</div>
+                        </div>
+
+                        <nav className="flex-1 space-y-1">
+                            {nav.map((item) => {
+                                const active = pathname === item.href || (item.href !== "/worker/dashboard" && pathname.startsWith(item.href));
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        onClick={() => setSidebarOpen(false)}
+                                        className={cn(
+                                            "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium",
+                                            "transition-all duration-200 ease-out",
+                                            active
+                                                ? "bg-brand/10 text-brand shadow-sm"
+                                                : "text-muted hover:bg-surface-strong hover:text-text hover:translate-x-1",
+                                        )}
+                                    >
+                                        <span className="text-base">{item.icon}</span>
+                                        {item.label}
+                                    </Link>
+                                );
+                            })}
+                        </nav>
+
+                        <div className="space-y-2 border-t border-border/60 pt-4">
+                            <button
+                                onClick={() => setTheme(resolved === "dark" ? "light" : "dark")}
+                                className="hidden w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted transition-all duration-200 hover:bg-surface-strong hover:text-text hover:translate-x-1 lg:flex"
+                            >
+                                <motion.span
+                                    key={resolved}
+                                    initial={{ rotate: -90, opacity: 0 }}
+                                    animate={{ rotate: 0, opacity: 1 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                                    className="text-base"
+                                >
+                                    {resolved === "dark" ? "☀️" : "🌙"}
+                                </motion.span>
+                                {resolved === "dark" ? "Light mode" : "Dark mode"}
+                            </button>
+                            <button
+                                onClick={logout}
+                                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-danger transition-all duration-200 hover:bg-danger/10 hover:translate-x-1"
+                            >
+                                <span className="text-base">🚪</span>
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </aside>
+
+                <AnimatePresence>
+                    {sidebarOpen && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden"
+                            onClick={() => setSidebarOpen(false)}
+                        />
+                    )}
+                </AnimatePresence>
+
+                <main className="min-w-0 flex-1 p-4 lg:p-0">{children}</main>
             </div>
         </div>
     );
